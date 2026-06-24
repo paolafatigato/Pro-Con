@@ -6,11 +6,12 @@
 <title>ProCon — Le tue decisioni</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-<!-- Firebase -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, onSnapshot }
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, doc, setDoc, collection, getDocs, deleteDoc }
   from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDdjBUHrbHb8jE-WaIT70DIoLYVvticwtM",
@@ -21,284 +22,266 @@ const firebaseConfig = {
   appId: "1:878626793428:web:49def3136cde217c7b1841"
 };
 
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+const app      = initializeApp(firebaseConfig);
+const db       = getFirestore(app);
+const auth     = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-// ── expose to global scope ────────────────────────────────────────
-window._db = db;
-window._fsDoc        = doc;
-window._fsSetDoc     = setDoc;
-window._fsGetDoc     = getDoc;
-window._fsCollection = collection;
-window._fsGetDocs    = getDocs;
-window._fsDeleteDoc  = deleteDoc;
-window._fsOnSnapshot = onSnapshot;
+window._db          = db;
+window._auth        = auth;
+window._fsDoc       = doc;
+window._fsSetDoc    = setDoc;
+window._fsCollection= collection;
+window._fsGetDocs   = getDocs;
+window._fsDeleteDoc = deleteDoc;
+window._signIn  = () => signInWithPopup(auth, provider);
+window._signOut = () => signOut(auth);
 
-window.dispatchEvent(new Event('firebaseReady'));
+onAuthStateChanged(auth, user => {
+  window._currentUser = user;
+  window.dispatchEvent(new CustomEvent('authChanged', { detail: user }));
+});
 </script>
 
 <style>
 :root {
-  --lav:   #6B7FD4;
-  --lav-l: #EEF0FC;
-  --lav-m: #B8C2EE;
-  --amb:   #D97706;
-  --amb-l: #FEF3EC;
-  --amb-m: #F3C49A;
-  --pro:   #3DBF82;
-  --pro-l: #E8F9F2;
-  --pro-m: #9FDFBF;
-  --con:   #E85A7A;
-  --con-l: #FDEEF2;
-  --con-m: #f3b0c0;
-  --neu:   #8B5CF6;
-  --neu-l: #F5F0FF;
-  --bg:    #F0F0FA;
-  --card:  #FFFFFF;
-  --text:  #1A1A2E;
-  --muted: #7070A0;
-  --bord:  #E0E0F0;
-  --sha:   0 2px 12px rgba(80,80,160,0.09);
+  --lav:  #6B7FD4; --lav-l:#EEF0FC; --lav-m:#B8C2EE;
+  --amb:  #D97706; --amb-l:#FEF3EC; --amb-m:#F3C49A;
+  --pro:  #3DBF82; --pro-l:#E8F9F2; --pro-m:#9FDFBF;
+  --con:  #E85A7A; --con-l:#FDEEF2; --con-m:#f3b0c0;
+  --neu:  #8B5CF6; --neu-l:#F5F0FF;
+  --bg:   #F0F0FA; --card:#FFFFFF;
+  --text: #1A1A2E; --muted:#7070A0; --bord:#E0E0F0;
+  --sha:  0 2px 12px rgba(80,80,160,0.09);
+  --cat-w: 300px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px;}
 
 /* ── HEADER ── */
-header{background:linear-gradient(135deg,#1A1A2E,#2E2E5A);color:white;padding:14px 24px;
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
-header h1{font-family:'Sora',sans-serif;font-size:1.25rem;font-weight:800;}
+header{background:linear-gradient(135deg,#1A1A2E,#2E2E5A);color:white;padding:12px 20px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:100;}
+header h1{font-family:'Sora',sans-serif;font-size:1.2rem;font-weight:800;}
 header h1 span{color:var(--lav-m);}
-.btn{font-family:'Sora',sans-serif;font-size:0.74rem;font-weight:600;padding:6px 13px;border-radius:7px;border:none;cursor:pointer;transition:all .15s;}
+.header-right{display:flex;align-items:center;gap:10px;}
+#saveStatus{font-size:.68rem;color:rgba(255,255,255,.4);}
+.btn{font-family:'Sora',sans-serif;font-size:0.73rem;font-weight:600;padding:6px 13px;border-radius:7px;border:none;cursor:pointer;transition:all .15s;}
 .btn-ghost{background:rgba(255,255,255,.09);color:white;border:1px solid rgba(255,255,255,.2);}
 .btn-ghost:hover{background:rgba(255,255,255,.16);}
 .btn-lav{background:var(--lav);color:white;}
 .btn-lav:hover{background:#5a6ec0;}
-.btn-pro{background:var(--pro-l);color:var(--pro);border:1px solid var(--pro-m);}
-.btn-pro:hover{background:var(--pro);color:white;}
-.btn-del{background:var(--con-l);color:var(--con);border:1px solid var(--con-m);}
-.btn-del:hover{background:var(--con);color:white;}
-.header-actions{display:flex;gap:6px;flex-wrap:wrap;}
 
-/* ── SIDEBAR + MAIN ── */
-.layout{display:flex;min-height:calc(100vh - 52px);}
-.sidebar{width:220px;flex-shrink:0;background:white;border-right:1.5px solid var(--bord);
-  display:flex;flex-direction:column;padding:12px 10px;gap:6px;}
-.sidebar-title{font-family:'Sora',sans-serif;font-size:0.68rem;font-weight:700;
-  text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:4px 6px 8px;}
-.decision-item{
-  padding:8px 10px;border-radius:8px;border:1.5px solid transparent;
-  cursor:pointer;transition:all .15s;
-  display:flex;align-items:center;gap:6px;
+/* ── LOGIN SCREEN ── */
+.login-screen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:calc(100vh - 52px);gap:20px;padding:40px;text-align:center;
 }
+.login-card{background:white;border-radius:16px;padding:36px 40px;border:1.5px solid var(--bord);
+  box-shadow:var(--sha);max-width:380px;width:100%;}
+.login-card h2{font-family:'Sora',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:8px;}
+.login-card p{font-size:0.84rem;color:var(--muted);margin-bottom:24px;line-height:1.5;}
+.btn-google{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:11px 16px;border-radius:10px;
+  background:white;border:1.5px solid var(--bord);
+  font-family:'Sora',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;
+  color:var(--text);transition:all .15s;box-shadow:0 1px 4px rgba(0,0,0,.08);
+}
+.btn-google:hover{border-color:var(--lav);background:var(--lav-l);box-shadow:var(--sha);}
+.google-icon{width:18px;height:18px;}
+
+/* ── USER CHIP ── */
+.user-chip{display:flex;align-items:center;gap:7px;}
+.user-avatar{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.3);}
+.user-name{font-size:0.74rem;font-weight:600;color:rgba(255,255,255,.85);max-width:120px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:calc(100vh - 52px);}
+.sidebar{width:210px;flex-shrink:0;background:white;border-right:1.5px solid var(--bord);
+  display:flex;flex-direction:column;padding:10px 8px;gap:4px;}
+.sidebar-title{font-family:'Sora',sans-serif;font-size:0.64rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:4px 8px 8px;}
+.decision-item{padding:7px 9px;border-radius:7px;border:1.5px solid transparent;
+  cursor:pointer;transition:all .14s;display:flex;align-items:center;gap:6px;}
 .decision-item:hover{background:var(--lav-l);border-color:var(--lav-m);}
 .decision-item.active{background:var(--lav-l);border-color:var(--lav);font-weight:600;}
-.decision-item-name{font-size:0.82rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.decision-item-del{opacity:0;font-size:0.75rem;color:var(--con);background:none;border:none;cursor:pointer;padding:1px 3px;border-radius:3px;line-height:1;}
+.decision-item-name{font-size:0.8rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.decision-item-del{opacity:0;font-size:0.72rem;color:var(--con);background:none;border:none;cursor:pointer;
+  padding:1px 3px;border-radius:3px;line-height:1;}
 .decision-item:hover .decision-item-del{opacity:1;}
 .decision-item-del:hover{background:var(--con-l);}
-.sidebar-add{margin-top:4px;}
 .sidebar-add-btn{width:100%;background:transparent;border:1.5px dashed var(--bord);border-radius:8px;
-  padding:7px;font-size:0.78rem;cursor:pointer;color:var(--muted);font-family:'Inter',sans-serif;
-  transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px;}
+  padding:7px;font-size:0.76rem;cursor:pointer;color:var(--muted);font-family:'Inter',sans-serif;
+  margin-top:6px;transition:all .14s;display:flex;align-items:center;justify-content:center;gap:4px;}
 .sidebar-add-btn:hover{border-color:var(--lav);color:var(--lav);background:var(--lav-l);}
 
-.main-content{flex:1;padding:16px;overflow-x:auto;}
+.main-content{flex:1;padding:14px;overflow-x:auto;min-width:0;}
 
 /* ── DECISION HEADER ── */
-.decision-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-.decision-title-input{
-  font-family:'Sora',sans-serif;font-size:1.2rem;font-weight:700;
+.decision-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.decision-title-input{font-family:'Sora',sans-serif;font-size:1.15rem;font-weight:700;
   background:transparent;border:none;border-bottom:2px solid var(--bord);
-  outline:none;color:var(--text);padding:2px 4px;min-width:200px;
-}
+  outline:none;color:var(--text);padding:2px 4px;min-width:200px;}
 .decision-title-input:focus{border-color:var(--lav);}
 
 /* ── TABLE ── */
 .table-outer{background:white;border-radius:12px;border:1.5px solid var(--bord);overflow:hidden;box-shadow:var(--sha);}
-
-.col-headers{
-  display:grid;
-  gap:0;
-  background:#F8F8FF;
-  border-bottom:1.5px solid var(--bord);
-}
-.col-head{
-  padding:9px 12px;
-  font-family:'Sora',sans-serif;font-size:0.64rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
-  display:flex;align-items:center;gap:7px;border-right:1px solid var(--bord);
-}
+.col-headers{display:grid;gap:0;background:#F8F8FF;border-bottom:1.5px solid var(--bord);}
+.col-head{padding:8px 12px;font-family:'Sora',sans-serif;font-size:0.62rem;font-weight:700;
+  letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:7px;
+  border-right:1px solid var(--bord);}
 .col-head:last-child{border-right:none;}
 .col-head-cat{color:var(--muted);}
 .col-head-opt{justify-content:space-between;}
-.opt-name-input{
-  font-family:'Sora',sans-serif;font-size:0.8rem;font-weight:700;
-  background:transparent;border:none;outline:none;flex:1;color:inherit;
-}
+.opt-name-input{font-family:'Sora',sans-serif;font-size:0.78rem;font-weight:700;
+  background:transparent;border:none;outline:none;flex:1;color:inherit;}
 .opt-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.col-del-btn{background:none;border:none;cursor:pointer;font-size:0.7rem;color:var(--con);opacity:.5;padding:1px 3px;border-radius:3px;}
+.col-del-btn{background:none;border:none;cursor:pointer;font-size:0.68rem;color:var(--con);
+  opacity:.5;padding:1px 3px;border-radius:3px;}
 .col-del-btn:hover{opacity:1;background:var(--con-l);}
-
-/* add option button in header */
-.col-head-add{
-  padding:6px 10px;cursor:pointer;color:var(--muted);
-  display:flex;align-items:center;justify-content:center;
-  background:transparent;border:none;font-size:1rem;
-  transition:color .15s;
-}
+.col-head-add{padding:6px 10px;cursor:pointer;color:var(--muted);background:transparent;
+  border:none;font-size:1rem;transition:color .14s;display:flex;align-items:center;justify-content:center;}
 .col-head-add:hover{color:var(--lav);}
 
 /* rows */
 .rows-body{display:flex;flex-direction:column;}
-
-.criterion-row{
-  display:grid;
-  gap:0;
-  border-top:1px solid var(--bord);
-  align-items:stretch;
-  min-height:68px;
-  transition:background .12s;
-}
+.criterion-row{display:grid;gap:0;border-top:1px solid var(--bord);align-items:stretch;
+  min-height:72px;transition:background .12s;}
 .criterion-row:first-child{border-top:none;}
 .criterion-row:hover{background:#FAFAFF;}
 .criterion-row.dragging{opacity:.35;}
 .criterion-row.drag-over{outline:2px solid var(--lav);outline-offset:-2px;background:var(--lav-l);}
 
 /* ── CATEGORY CELL ── */
-.cell-cat{
-  padding:8px 10px;border-right:1px solid var(--bord);
-  display:flex;flex-direction:column;gap:5px;justify-content:center;
-  cursor:grab;
-}
+.cell-cat{padding:8px 12px;border-right:1px solid var(--bord);
+  display:flex;flex-direction:column;gap:4px;justify-content:center;cursor:grab;}
 .cell-cat:active{cursor:grabbing;}
 .cat-top{display:flex;align-items:center;gap:5px;}
-.cat-input{
-  font-size:0.82rem;font-weight:600;color:var(--text);
-  background:transparent;border:none;outline:none;
-  font-family:'Inter',sans-serif;flex:1;cursor:text;
-}
+.cat-input{font-size:0.83rem;font-weight:600;color:var(--text);background:transparent;
+  border:none;outline:none;font-family:'Inter',sans-serif;flex:1;cursor:text;}
 .cat-input::placeholder{color:var(--muted);font-weight:400;}
-.type-select{
-  font-size:0.6rem;font-weight:700;padding:2px 3px;border-radius:4px;
-  border:1px solid var(--bord);background:white;cursor:pointer;
-  color:var(--muted);font-family:'Inter',sans-serif;
-}
-.row-del-btn{background:none;border:none;cursor:pointer;font-size:0.72rem;color:var(--con);opacity:0;padding:1px 3px;border-radius:3px;line-height:1;}
+.type-select{font-size:0.6rem;font-weight:700;padding:2px 3px;border-radius:4px;
+  border:1px solid var(--bord);background:white;cursor:pointer;color:var(--muted);font-family:'Inter',sans-serif;}
+.row-del-btn{background:none;border:none;cursor:pointer;font-size:0.7rem;color:var(--con);
+  opacity:0;padding:1px 3px;border-radius:3px;line-height:1;}
 .criterion-row:hover .row-del-btn{opacity:1;}
 .row-del-btn:hover{background:var(--con-l);}
-
-/* peso inside cat cell */
-.peso-row{display:flex;align-items:center;gap:6px;}
-.peso-lbl{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--neu);width:30px;}
-.peso-val{font-family:'Sora',sans-serif;font-size:0.72rem;font-weight:700;color:var(--neu);width:14px;text-align:right;}
-.type-badge{
-  font-size:0.58rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
-  padding:1px 5px;border-radius:3px;
-}
+.cat-bottom{display:flex;align-items:center;gap:6px;}
+.type-badge{font-size:0.56rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  padding:1px 5px;border-radius:3px;flex-shrink:0;}
 .badge-pro{background:var(--pro-l);color:var(--pro);}
 .badge-con{background:var(--con-l);color:var(--con);}
 .badge-neu{background:var(--neu-l);color:var(--neu);}
 
-/* ── SCORE CELL ── */
-.cell-score{
-  padding:8px 10px;border-right:1px solid var(--bord);
-  display:flex;flex-direction:column;gap:5px;justify-content:center;
-}
-.cell-score:last-child{border-right:none;}
+/* peso in cat cell */
+.peso-row{display:flex;align-items:center;gap:6px;flex:1;}
+.peso-lbl{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--neu);width:28px;flex-shrink:0;}
+.peso-val{font-family:'Sora',sans-serif;font-size:0.7rem;font-weight:700;color:var(--neu);width:14px;text-align:right;flex-shrink:0;}
 
+/* ── SCORE CELL ── */
+.cell-score{padding:8px 12px;border-right:1px solid var(--bord);
+  display:flex;flex-direction:column;gap:5px;justify-content:center;}
+.cell-score:last-child{border-right:none;}
 .score-meta{display:flex;align-items:center;gap:5px;}
-.score-lbl{font-size:0.58rem;color:var(--muted);}
-.score-num{font-family:'Sora',sans-serif;font-size:0.72rem;font-weight:700;}
+.score-lbl{font-size:0.57rem;color:var(--muted);}
+.score-num{font-family:'Sora',sans-serif;font-size:0.7rem;font-weight:700;}
 
 /* ── TRACK ── */
-.track-wrap{position:relative;height:24px;display:flex;align-items:center;user-select:none;}
+.track-wrap{position:relative;height:22px;display:flex;align-items:center;user-select:none;}
 .track-bg{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:3px;background:#E8E8F4;border-radius:2px;}
 .track-fill{position:absolute;left:0;top:50%;transform:translateY(-50%);height:3px;border-radius:2px;pointer-events:none;}
 .fill-neu{background:var(--neu);}
-.fill-opt{} /* set inline per color */
-.track-ticks{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);display:flex;justify-content:space-between;pointer-events:none;}
+.track-ticks{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  display:flex;justify-content:space-between;pointer-events:none;}
 .tick{width:1px;background:#C8C8E0;border-radius:1px;}
 .tick.sm{height:6px;margin-top:-3px;}
 .tick.md{height:10px;margin-top:-5px;}
-/* native range hidden */
-.track-input{
-  position:absolute;left:0;right:0;top:0;bottom:0;width:100%;height:100%;
-  opacity:0;cursor:pointer;margin:0;-webkit-appearance:none;appearance:none;z-index:4;
-}
-/* thumb */
-.thumb{
-  position:absolute;top:50%;transform:translate(-50%,-50%);
+.track-input{position:absolute;left:0;right:0;top:0;bottom:0;width:100%;height:100%;
+  opacity:0;cursor:pointer;margin:0;-webkit-appearance:none;appearance:none;z-index:4;}
+.thumb{position:absolute;top:50%;transform:translate(-50%,-50%);
   width:13px;height:13px;border-radius:50%;pointer-events:none;z-index:3;
-  box-shadow:0 1px 4px rgba(0,0,0,.18);transition:transform .08s;
-}
+  box-shadow:0 1px 4px rgba(0,0,0,.18);transition:transform .08s;}
 .thumb-neu{background:var(--neu);box-shadow:0 0 0 3px rgba(139,92,246,.2);}
 .thumb.big{transform:translate(-50%,-50%) scale(1.2);}
 
 /* ADD ROW */
-.add-row-btn{
-  width:100%;border:none;background:transparent;border-top:1px dashed var(--bord);
-  padding:9px;font-family:'Inter',sans-serif;font-size:0.78rem;
-  cursor:pointer;color:var(--muted);transition:all .14s;
-  display:flex;align-items:center;justify-content:center;gap:5px;
-}
+.add-row-btn{width:100%;border:none;background:transparent;border-top:1px dashed var(--bord);
+  padding:8px;font-family:'Inter',sans-serif;font-size:0.76rem;
+  cursor:pointer;color:var(--muted);transition:all .13s;
+  display:flex;align-items:center;justify-content:center;gap:5px;}
 .add-row-btn:hover{color:var(--lav);background:var(--lav-l);}
 
 /* ── SCOREBOARD ── */
-.scoreboard{margin-top:16px;background:white;border-radius:12px;border:1.5px solid var(--bord);padding:18px;box-shadow:var(--sha);}
-.sb-title{font-family:'Sora',sans-serif;font-size:0.85rem;font-weight:700;margin-bottom:14px;}
-.sb-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
-.sb-label{font-size:0.74rem;font-weight:600;width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.sb-track{flex:1;height:8px;background:#EEEEF8;border-radius:4px;overflow:hidden;}
+.scoreboard{margin-top:14px;background:white;border-radius:12px;border:1.5px solid var(--bord);
+  padding:16px;box-shadow:var(--sha);}
+.sb-title{font-family:'Sora',sans-serif;font-size:0.82rem;font-weight:700;margin-bottom:12px;}
+.sb-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.sb-label{font-size:0.72rem;font-weight:600;width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-track{flex:1;height:7px;background:#EEEEF8;border-radius:4px;overflow:hidden;}
 .sb-fill{height:100%;border-radius:4px;transition:width .4s cubic-bezier(.34,1.56,.64,1);}
-.sb-num{font-family:'Sora',sans-serif;font-size:0.72rem;font-weight:700;min-width:28px;text-align:right;}
-.sb-divider{font-family:'Sora',sans-serif;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:10px 0 8px;padding-top:8px;border-top:1px solid var(--bord);}
+.sb-num{font-family:'Sora',sans-serif;font-size:0.7rem;font-weight:700;min-width:26px;text-align:right;}
+.sb-divider{font-family:'Sora',sans-serif;font-size:0.6rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.7px;color:var(--muted);margin:10px 0 8px;padding-top:8px;border-top:1px solid var(--bord);}
 .winner-row{display:flex;align-items:center;gap:10px;margin-top:12px;padding:11px 14px;border-radius:9px;transition:all .4s;}
-.winner-name{font-family:'Sora',sans-serif;font-size:0.88rem;font-weight:800;}
-.winner-detail{font-size:0.7rem;color:var(--muted);margin-top:1px;}
+.winner-name{font-family:'Sora',sans-serif;font-size:0.86rem;font-weight:800;}
+.winner-detail{font-size:0.68rem;color:var(--muted);margin-top:1px;}
 
 /* ── EMPTY STATE ── */
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:60px 20px;color:var(--muted);gap:10px;text-align:center;}
 .empty-state span{font-size:2.5rem;}
-.empty-state p{font-size:0.85rem;line-height:1.5;}
+.empty-state p{font-size:0.83rem;line-height:1.5;}
 
 /* ── TOAST ── */
-.toast{
-  position:fixed;bottom:20px;right:20px;
-  background:#1A1A2E;color:white;
-  padding:8px 16px;border-radius:8px;
-  font-size:0.78rem;font-family:'Sora',sans-serif;font-weight:600;
-  opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;
-}
+.toast{position:fixed;bottom:20px;right:20px;background:#1A1A2E;color:white;
+  padding:8px 16px;border-radius:8px;font-size:0.76rem;font-family:'Sora',sans-serif;font-weight:600;
+  opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;}
 .toast.show{opacity:1;}
 </style>
 </head>
 <body>
 
 <header>
-  <div>
-    <h1>⚖️ Pro<span>Con</span></h1>
-    <p id="saveStatus" style="font-size:.7rem;color:rgba(255,255,255,.4);">In attesa di Firebase…</p>
-  </div>
-  <div class="header-actions">
-    <button class="btn btn-ghost" onclick="newDecision()">＋ Nuova decisione</button>
+  <h1>⚖️ Pro<span>Con</span></h1>
+  <div class="header-right">
+    <span id="saveStatus"></span>
+    <div id="headerUser"></div>
   </div>
 </header>
 
-<div class="layout">
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-title">Le tue decisioni</div>
-    <div id="decisionList"></div>
-    <div class="sidebar-add">
-      <button class="sidebar-add-btn" onclick="newDecision()">＋ Nuova</button>
+<!-- Login screen (shown when logged out) -->
+<div id="loginScreen" style="display:none;">
+  <div class="login-screen">
+    <div class="login-card">
+      <h2>⚖️ ProCon</h2>
+      <p>Crea e salva le tue decisioni pesate.<br>Accedi per sincronizzare tutto sul tuo account.</p>
+      <button class="btn-google" onclick="doSignIn()">
+        <svg class="google-icon" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.8 2.2 30.2 0 24 0 14.8 0 6.9 5.4 3 13.3l7.9 6.1C12.7 13.1 17.9 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9C43.7 37.7 46.5 31.5 46.5 24.5z"/>
+          <path fill="#FBBC05" d="M10.9 28.6A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6L2.4 13.3A24 24 0 0 0 0 24c0 3.8.9 7.4 2.4 10.6l8.5-6z"/>
+          <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.6-5.9c-2 1.4-4.6 2.2-7.6 2.2-6.1 0-11.3-3.6-13.1-9l-7.9 6.1C6.9 42.6 14.8 48 24 48z"/>
+        </svg>
+        Accedi con Google
+      </button>
     </div>
   </div>
+</div>
 
-  <!-- MAIN -->
-  <div class="main-content" id="mainContent">
-    <div class="empty-state">
-      <span>⚖️</span>
-      <p>Seleziona o crea una decisione dalla sidebar.</p>
+<!-- App (shown when logged in) -->
+<div id="appScreen" style="display:none;">
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-title">Le tue decisioni</div>
+      <div id="decisionList"></div>
+      <button class="sidebar-add-btn" onclick="newDecision()">＋ Nuova decisione</button>
+    </div>
+    <div class="main-content" id="mainContent">
+      <div class="empty-state">
+        <span>⚖️</span>
+        <p>Seleziona o crea una decisione dalla sidebar.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -308,15 +291,13 @@ header h1 span{color:var(--lav-m);}
 <script>
 // ══════════════════════════════════════════════════════════════════
 // STATE
-// decisions: { id, title, options:[{id,name,color}], criteria:[{id,label,type,peso,votes:{optId:val}}] }
 // ══════════════════════════════════════════════════════════════════
-let decisions   = {};   // id → decision obj
-let currentId   = null;
-let db, fsDoc, fsSetDoc, fsGetDoc, fsCollection, fsGetDocs, fsDeleteDoc, fsOnSnapshot;
-let saveTimer   = null;
-let didCounter  = 1;
-let cidCounter  = 1;
-let oidCounter  = 1;
+let decisions  = {};
+let currentId  = null;
+let db, fsDoc, fsSetDoc, fsCollection, fsGetDocs, fsDeleteDoc;
+let currentUid = null;
+let saveTimer  = null;
+let didCounter = 1, cidCounter = 1, oidCounter = 1;
 
 const OPT_COLORS = [
   {bg:'#FEF3EC',text:'#D97706',dot:'#D97706',fill:'#D97706'},
@@ -330,91 +311,148 @@ function genDid(){ return 'd'+(didCounter++); }
 function genCid(){ return 'c'+(cidCounter++); }
 function genOid(){ return 'o'+(oidCounter++); }
 
-// ── FIREBASE INIT ─────────────────────────────────────────────────
-window.addEventListener('firebaseReady', async () => {
+// ── AUTH ──────────────────────────────────────────────────────────
+function doSignIn()  { window._signIn().catch(e => showToast('Errore login: '+e.message)); }
+function doSignOut() { window._signOut(); }
+
+window.addEventListener('authChanged', async e => {
+  const user = e.detail;
+  if (user) {
+    currentUid = user.uid;
+    showApp(user);
+    await loadDecisions();
+  } else {
+    currentUid = null;
+    decisions  = {};
+    currentId  = null;
+    showLogin();
+  }
+});
+
+function showLogin() {
+  document.getElementById('loginScreen').style.display = 'block';
+  document.getElementById('appScreen').style.display   = 'none';
+  document.getElementById('headerUser').innerHTML = '';
+  document.getElementById('saveStatus').textContent = '';
+}
+
+function showApp(user) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display   = 'block';
+  document.getElementById('headerUser').innerHTML = `
+    <div class="user-chip">
+      ${user.photoURL ? `<img class="user-avatar" src="${user.photoURL}" referrerpolicy="no-referrer">` : ''}
+      <span class="user-name">${escHtml(user.displayName||user.email)}</span>
+      <button class="btn btn-ghost" onclick="doSignOut()">Esci</button>
+    </div>`;
+}
+
+// ── FIREBASE ─────────────────────────────────────────────────────
+// Wait for module to expose globals
+function waitForFirebase() {
+  return new Promise(res => {
+    if (window._db) { res(); return; }
+    window.addEventListener('authChanged', res, { once: true });
+    // also try polling
+    const t = setInterval(() => { if(window._db){ clearInterval(t); res(); }}, 50);
+  });
+}
+
+async function initFirebase() {
+  await waitForFirebase();
   db          = window._db;
   fsDoc       = window._fsDoc;
   fsSetDoc    = window._fsSetDoc;
-  fsGetDoc    = window._fsGetDoc;
   fsCollection= window._fsCollection;
   fsGetDocs   = window._fsGetDocs;
   fsDeleteDoc = window._fsDeleteDoc;
-  fsOnSnapshot= window._fsOnSnapshot;
+}
+initFirebase();
 
-  document.getElementById('saveStatus').textContent = 'Connesso ✓';
+// Firestore path: users/{uid}/decisions/{did}
+function decisionsCol() {
+  return fsCollection(db, 'users', currentUid, 'decisions');
+}
+function decisionDoc(did) {
+  return fsDoc(db, 'users', currentUid, 'decisions', did);
+}
 
-  // load all decisions
-  const snap = await fsGetDocs(fsCollection(db,'decisions'));
-  snap.forEach(d => {
-    const data = d.data();
-    decisions[d.id] = data;
-    // restore counters
-    if (data.criteria) data.criteria.forEach(c => {
-      const n = parseInt(c.id.slice(1));
-      if (!isNaN(n) && n >= cidCounter) cidCounter = n+1;
+async function loadDecisions() {
+  if (!db || !currentUid) return;
+  setSaveStatus('Caricamento…');
+  decisions = {}; didCounter = 1; cidCounter = 1; oidCounter = 1;
+  try {
+    const snap = await fsGetDocs(decisionsCol());
+    snap.forEach(d => {
+      const data = d.data();
+      decisions[d.id] = data;
+      restoreCounters(data);
     });
-    if (data.options) data.options.forEach(o => {
-      const n = parseInt(o.id.slice(1));
-      if (!isNaN(n) && n >= oidCounter) oidCounter = n+1;
-    });
-    const n = parseInt(d.id.slice(1));
-    if (!isNaN(n) && n >= didCounter) didCounter = n+1;
+    setSaveStatus('');
+    renderSidebar();
+    const ids = Object.keys(decisions);
+    if (!ids.length) newDecision();
+    else selectDecision(ids[0]);
+  } catch(err) {
+    setSaveStatus('Errore caricamento');
+    console.error(err);
+  }
+}
+
+function restoreCounters(data) {
+  if (data.criteria) data.criteria.forEach(c => {
+    const n = parseInt(c.id.slice(1)); if (!isNaN(n) && n>=cidCounter) cidCounter=n+1;
   });
-
-  renderSidebar();
-  if (Object.keys(decisions).length === 0) newDecision();
-  else selectDecision(Object.keys(decisions)[0]);
-});
+  if (data.options) data.options.forEach(o => {
+    const n = parseInt(o.id.slice(1)); if (!isNaN(n) && n>=oidCounter) oidCounter=n+1;
+  });
+  if (data.id) { const n=parseInt(data.id.slice(1)); if(!isNaN(n)&&n>=didCounter) didCounter=n+1; }
+}
 
 // ── SAVE ─────────────────────────────────────────────────────────
 function scheduleSave() {
   clearTimeout(saveTimer);
-  document.getElementById('saveStatus').textContent = 'Salvataggio…';
-  saveTimer = setTimeout(saveCurrentDecision, 800);
+  setSaveStatus('Salvataggio…');
+  saveTimer = setTimeout(saveCurrentDecision, 700);
 }
 
 async function saveCurrentDecision() {
-  if (!currentId || !db) return;
+  if (!currentId || !db || !currentUid) return;
   const dec = decisions[currentId];
   if (!dec) return;
   try {
-    await fsSetDoc(fsDoc(db,'decisions', currentId), dec);
-    document.getElementById('saveStatus').textContent = 'Salvato ✓';
+    await fsSetDoc(decisionDoc(currentId), dec);
+    setSaveStatus('Salvato ✓');
   } catch(e) {
-    document.getElementById('saveStatus').textContent = 'Errore salvataggio';
+    setSaveStatus('Errore ✗');
     console.error(e);
   }
 }
 
+function setSaveStatus(msg) {
+  document.getElementById('saveStatus').textContent = msg;
+}
+
 // ── DECISION CRUD ─────────────────────────────────────────────────
 function newDecision() {
-  const id = genDid();
-  const o1 = genOid(), o2 = genOid();
-  decisions[id] = {
-    id, title: 'Nuova decisione',
-    options: [
-      { id: o1, name: 'Opzione A', colorIdx: 0 },
-      { id: o2, name: 'Opzione B', colorIdx: 1 },
-    ],
-    criteria: []
-  };
+  const id=genDid(), o1=genOid(), o2=genOid();
+  decisions[id] = { id, title:'Nuova decisione',
+    options:[{id:o1,name:'Opzione A',colorIdx:0},{id:o2,name:'Opzione B',colorIdx:1}],
+    criteria:[] };
   renderSidebar();
   selectDecision(id);
   scheduleSave();
 }
 
-async function deleteDecision(id) {
+async function deleteDecision(did) {
   if (!confirm('Eliminare questa decisione?')) return;
-  delete decisions[id];
-  if (db) await fsDeleteDoc(fsDoc(db,'decisions', id));
+  delete decisions[did];
+  if (db && currentUid) await fsDeleteDoc(decisionDoc(did)).catch(console.error);
   renderSidebar();
   const ids = Object.keys(decisions);
   if (ids.length) selectDecision(ids[0]);
-  else {
-    currentId = null;
-    document.getElementById('mainContent').innerHTML = `
-      <div class="empty-state"><span>⚖️</span><p>Crea una nuova decisione.</p></div>`;
-  }
+  else { currentId=null; document.getElementById('mainContent').innerHTML=
+    `<div class="empty-state"><span>⚖️</span><p>Crea una nuova decisione.</p></div>`; }
 }
 
 function selectDecision(id) {
@@ -426,12 +464,12 @@ function selectDecision(id) {
 // ── SIDEBAR ───────────────────────────────────────────────────────
 function renderSidebar() {
   const list = document.getElementById('decisionList');
+  if (!list) return;
   list.innerHTML = '';
   Object.values(decisions).forEach(dec => {
     const d = document.createElement('div');
-    d.className = 'decision-item' + (dec.id === currentId ? ' active' : '');
-    d.innerHTML = `
-      <span class="decision-item-name">${escHtml(dec.title)}</span>
+    d.className = 'decision-item'+(dec.id===currentId?' active':'');
+    d.innerHTML = `<span class="decision-item-name">${escHtml(dec.title)}</span>
       <button class="decision-item-del" onclick="event.stopPropagation();deleteDecision('${dec.id}')">🗑</button>`;
     d.onclick = () => selectDecision(dec.id);
     list.appendChild(d);
@@ -441,30 +479,32 @@ function renderSidebar() {
 // ── MAIN RENDER ───────────────────────────────────────────────────
 let dragSrcId = null;
 
+function gridTpl(dec) {
+  const optCols = dec.options.map(()=>'1fr').join(' ');
+  return `var(--cat-w) ${optCols} 36px`;
+}
+
 function renderMain() {
   const dec = decisions[currentId];
   if (!dec) return;
   const mc = document.getElementById('mainContent');
-
-  // build grid template: cat-col (180px) + options + add-btn
-  const optCols = dec.options.map(() => '1fr').join(' ');
-  const gridTpl = `180px ${optCols} 36px`;
+  const gt = gridTpl(dec);
 
   mc.innerHTML = `
     <div class="decision-header">
       <input class="decision-title-input" value="${escHtml(dec.title)}"
-        oninput="decisions[currentId].title=this.value; renderSidebar(); scheduleSave()">
+        oninput="decisions[currentId].title=this.value;renderSidebar();scheduleSave()">
     </div>
     <div class="table-outer">
-      <div class="col-headers" id="colHeaders" style="grid-template-columns:${gridTpl}">
-        <div class="col-head col-head-cat">📋 Categoria</div>
-        ${dec.options.map((opt,i) => {
-          const c = OPT_COLORS[opt.colorIdx % OPT_COLORS.length];
+      <div class="col-headers" id="colHeaders" style="grid-template-columns:${gt}">
+        <div class="col-head col-head-cat">📋 Categoria &amp; Peso</div>
+        ${dec.options.map((opt,i)=>{
+          const c=OPT_COLORS[opt.colorIdx%OPT_COLORS.length];
           return `<div class="col-head col-head-opt" style="color:${c.text};background:${c.bg}">
             <span class="opt-dot" style="background:${c.dot}"></span>
             <input class="opt-name-input" value="${escHtml(opt.name)}"
-              oninput="decisions[currentId].options[${i}].name=this.value; updateScoreboard(); scheduleSave()">
-            ${dec.options.length > 1 ? `<button class="col-del-btn" title="Rimuovi opzione" onclick="removeOption(${i})">✕</button>` : ''}
+              oninput="decisions[currentId].options[${i}].name=this.value;updateScoreboard();scheduleSave()">
+            ${dec.options.length>1?`<button class="col-del-btn" onclick="removeOption(${i})">✕</button>`:''}
           </div>`;
         }).join('')}
         <button class="col-head-add" title="Aggiungi opzione" onclick="addOption()">＋</button>
@@ -472,8 +512,7 @@ function renderMain() {
       <div class="rows-body" id="rowsBody"></div>
       <button class="add-row-btn" onclick="addCriterion()">＋ Aggiungi categoria</button>
     </div>
-    <div class="scoreboard" id="scoreboard"></div>
-  `;
+    <div class="scoreboard" id="scoreboard"></div>`;
 
   renderRows();
   updateScoreboard();
@@ -485,344 +524,285 @@ function renderRows() {
   const body = document.getElementById('rowsBody');
   if (!body) return;
   body.innerHTML = '';
-
-  const optCols = dec.options.map(() => '1fr').join(' ');
-  const gridTpl = `180px ${optCols} 36px`;
-
-  dec.criteria.forEach(cr => {
-    body.appendChild(makeRow(cr, gridTpl));
-  });
+  const gt = gridTpl(dec);
+  dec.criteria.forEach(cr => body.appendChild(makeRow(cr, gt)));
 }
 
-function makeRow(cr, gridTpl) {
+function makeRow(cr, gt) {
   const dec = decisions[currentId];
   const div = document.createElement('div');
   div.className = 'criterion-row';
   div.id = 'row-'+cr.id;
-  div.style.gridTemplateColumns = gridTpl;
+  div.style.gridTemplateColumns = gt;
+  div.setAttribute('draggable','false');
 
-  // drag only from cat cell (set in HTML via pointer events)
-  div.setAttribute('draggable','false'); // row itself not draggable — only via handle
+  const badgeMap={pro:'badge-pro',contro:'badge-con',neutral:'badge-neu'};
+  const badgeLbl={pro:'PRO',contro:'CONTRO',neutral:'NEUTRO'};
+  const pesoPct = valToPct(cr.peso);
 
-  const badgeMap = {pro:'badge-pro',contro:'badge-con',neutral:'badge-neu'};
-  const badgeLbl = {pro:'PRO',contro:'CONTRO',neutral:'NEUTRO'};
-  const pesoPct  = valToPct(cr.peso);
-
-  // ── CATEGORY CELL (draggable) ──
+  // ── CAT CELL ──
   const catCell = document.createElement('div');
   catCell.className = 'cell-cat';
   catCell.setAttribute('draggable','true');
-  catCell.style.cursor = 'grab';
   catCell.innerHTML = `
     <div class="cat-top">
       <input class="cat-input" placeholder="Categoria…" value="${escHtml(cr.label)}"
         onclick="event.stopPropagation()"
         oninput="updateCriterionField('${cr.id}','label',this.value)">
       <select class="type-select" onclick="event.stopPropagation()"
-        onchange="updateCriterionField('${cr.id}','type',this.value); rerenderRow('${cr.id}')">
+        onchange="updateCriterionField('${cr.id}','type',this.value);rerenderRow('${cr.id}')">
         <option value="pro"     ${cr.type==='pro'    ?'selected':''}>✅</option>
         <option value="contro"  ${cr.type==='contro' ?'selected':''}>❌</option>
         <option value="neutral" ${cr.type==='neutral'?'selected':''}>➖</option>
       </select>
       <button class="row-del-btn" onclick="event.stopPropagation();removeCriterion('${cr.id}')">🗑</button>
     </div>
-    <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
+    <div class="cat-bottom">
       <span class="type-badge ${badgeMap[cr.type]}">${badgeLbl[cr.type]}</span>
-    </div>
-    <div class="peso-row" style="margin-top:4px">
-      <span class="peso-lbl">Peso</span>
-      <div class="track-wrap" style="flex:1" id="pw-${cr.id}">
-        <div class="track-bg"></div>
-        ${makeTicks()}
-        <div class="track-fill fill-neu" id="pf-${cr.id}" style="width:${pesoPct}%"></div>
-        <div class="thumb thumb-neu" id="pt-${cr.id}" style="left:${pesoPct}%"></div>
-        <input type="range" class="track-input" min="0" max="10" value="${cr.peso}"
-          onclick="event.stopPropagation()"
-          onmousedown="event.stopPropagation(); document.getElementById('pt-${cr.id}').classList.add('big')"
-          onmouseup="document.getElementById('pt-${cr.id}').classList.remove('big')"
-          oninput="event.stopPropagation(); onPeso('${cr.id}',this.value)">
+      <div class="peso-row">
+        <span class="peso-lbl">Peso</span>
+        <div class="track-wrap" style="flex:1" id="pw-${cr.id}">
+          <div class="track-bg"></div>
+          ${makeTicks()}
+          <div class="track-fill fill-neu" id="pf-${cr.id}" style="width:${pesoPct}%"></div>
+          <div class="thumb thumb-neu" id="pt-${cr.id}" style="left:${pesoPct}%"></div>
+          <input type="range" class="track-input" min="0" max="10" value="${cr.peso}"
+            onclick="event.stopPropagation()"
+            onmousedown="event.stopPropagation();el('pt-${cr.id}').classList.add('big')"
+            onmouseup="el('pt-${cr.id}').classList.remove('big')"
+            oninput="event.stopPropagation();onPeso('${cr.id}',this.value)">
+        </div>
+        <span class="peso-val" id="pv-${cr.id}">${cr.peso}</span>
       </div>
-      <span class="peso-val" id="pv-${cr.id}">${cr.peso}</span>
     </div>`;
 
-  // drag events on catCell only
   catCell.addEventListener('dragstart', e => {
     dragSrcId = cr.id;
-    setTimeout(() => div.classList.add('dragging'), 0);
-    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(()=>div.classList.add('dragging'),0);
+    e.dataTransfer.effectAllowed='move';
     e.stopPropagation();
   });
-  catCell.addEventListener('dragend', e => {
+  catCell.addEventListener('dragend', () => {
     div.classList.remove('dragging');
-    document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
-    dragSrcId = null;
+    document.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));
+    dragSrcId=null;
   });
-
   div.addEventListener('dragover', e => {
     e.preventDefault();
-    if (dragSrcId && dragSrcId !== cr.id) div.classList.add('drag-over');
+    if (dragSrcId && dragSrcId!==cr.id) div.classList.add('drag-over');
   });
-  div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+  div.addEventListener('dragleave', ()=>div.classList.remove('drag-over'));
   div.addEventListener('drop', e => {
     e.preventDefault(); div.classList.remove('drag-over');
-    if (!dragSrcId || dragSrcId === cr.id) return;
-    const dec = decisions[currentId];
-    const si = dec.criteria.findIndex(c=>c.id===dragSrcId);
-    const ti = dec.criteria.findIndex(c=>c.id===cr.id);
+    if (!dragSrcId||dragSrcId===cr.id) return;
+    const d=decisions[currentId];
+    const si=d.criteria.findIndex(c=>c.id===dragSrcId);
+    const ti=d.criteria.findIndex(c=>c.id===cr.id);
     if (si<0||ti<0) return;
-    const [m] = dec.criteria.splice(si,1);
-    dec.criteria.splice(ti,0,m);
+    const [m]=d.criteria.splice(si,1); d.criteria.splice(ti,0,m);
     renderRows(); scheduleSave();
   });
 
   div.appendChild(catCell);
 
-  // ── OPTION VOTE CELLS ──
-  dec.options.forEach((opt, oi) => {
-    const col = OPT_COLORS[opt.colorIdx % OPT_COLORS.length];
-    const vote = cr.votes[opt.id] ?? 5;
+  // ── VOTE CELLS ──
+  dec.options.forEach((opt,oi) => {
+    const col = OPT_COLORS[opt.colorIdx%OPT_COLORS.length];
+    const vote = cr.votes[opt.id]??5;
     const vPct = valToPct(vote);
-    const scoreVal = cr.peso * vote;
-
     const cell = document.createElement('div');
     cell.className = 'cell-score';
     cell.id = `cell-${cr.id}-${opt.id}`;
-    if (oi === dec.options.length - 1) cell.style.borderRight = 'none';
-
+    if (oi===dec.options.length-1) cell.style.borderRight='none';
     cell.innerHTML = `
       <div class="track-wrap" id="vw-${cr.id}-${opt.id}">
         <div class="track-bg"></div>
         ${makeTicks()}
-        <div class="track-fill" id="vf-${cr.id}-${opt.id}"
-          style="width:${vPct}%;background:${col.fill}"></div>
+        <div class="track-fill" id="vf-${cr.id}-${opt.id}" style="width:${vPct}%;background:${col.fill}"></div>
         <div class="thumb" id="vt-${cr.id}-${opt.id}"
           style="left:${vPct}%;background:${col.dot};box-shadow:0 0 0 3px ${col.dot}33"></div>
         <input type="range" class="track-input" min="0" max="10" value="${vote}"
-          onmousedown="document.getElementById('vt-${cr.id}-${opt.id}').classList.add('big')"
-          onmouseup="document.getElementById('vt-${cr.id}-${opt.id}').classList.remove('big')"
+          onmousedown="el('vt-${cr.id}-${opt.id}').classList.add('big')"
+          onmouseup="el('vt-${cr.id}-${opt.id}').classList.remove('big')"
           oninput="onVote('${cr.id}','${opt.id}',this.value)">
       </div>
       <div class="score-meta">
         <span class="score-lbl">voto</span>
         <span class="score-num" id="vv-${cr.id}-${opt.id}" style="color:${col.text}">${vote}</span>
-        <span class="score-lbl" style="margin-left:5px">score</span>
-        <span class="score-num" id="vs-${cr.id}-${opt.id}" style="color:${col.text}">${scoreVal}</span>
+        <span class="score-lbl" style="margin-left:4px">score</span>
+        <span class="score-num" id="vs-${cr.id}-${opt.id}" style="color:${col.text}">${cr.peso*vote}</span>
       </div>`;
     div.appendChild(cell);
   });
 
-  // empty last col (spacer)
-  const spacer = document.createElement('div');
+  const spacer=document.createElement('div');
   div.appendChild(spacer);
-
   return div;
 }
 
 function rerenderRow(cid) {
-  const dec = decisions[currentId];
-  const cr = dec.criteria.find(c=>c.id===cid);
+  const dec=decisions[currentId];
+  const cr=dec.criteria.find(c=>c.id===cid);
   if (!cr) return;
-  const optCols = dec.options.map(()=>'1fr').join(' ');
-  const gridTpl = `180px ${optCols} 36px`;
-  const oldRow = document.getElementById('row-'+cid);
-  if (!oldRow) return;
-  oldRow.replaceWith(makeRow(cr, gridTpl));
+  const old=document.getElementById('row-'+cid);
+  if (!old) return;
+  old.replaceWith(makeRow(cr,gridTpl(dec)));
 }
 
-// ── TICK MARKS ───────────────────────────────────────────────────
+// ── TICKS ────────────────────────────────────────────────────────
 function makeTicks() {
-  // 11 positions (0–10)
-  let html = '<div class="track-ticks">';
-  for (let i=0; i<=10; i++) {
-    const major = (i===0||i===5||i===10);
-    html += `<div class="tick ${major?'md':'sm'}"></div>`;
-  }
-  html += '</div>';
-  return html;
+  let h='<div class="track-ticks">';
+  for(let i=0;i<=10;i++) h+=`<div class="tick ${(i===0||i===5||i===10)?'md':'sm'}"></div>`;
+  return h+'</div>';
 }
+function valToPct(v){ return (v/10)*100; }
 
-function valToPct(val) { return (val / 10) * 100; }
-
-// ── SLIDER HANDLERS ───────────────────────────────────────────────
-function onPeso(cid, val) {
-  const dec = decisions[currentId];
-  const cr = dec.criteria.find(c=>c.id===cid);
+// ── SLIDERS ──────────────────────────────────────────────────────
+function onPeso(cid,val) {
+  const dec=decisions[currentId];
+  const cr=dec.criteria.find(c=>c.id===cid);
   if (!cr) return;
-  cr.peso = +val;
-  const pct = valToPct(+val);
-  el('pf-'+cid).style.width = pct+'%';
-  el('pt-'+cid).style.left  = pct+'%';
-  el('pv-'+cid).textContent = val;
-  // update all score chips for this row
-  dec.options.forEach(opt => {
-    const sv = el('vs-'+cid+'-'+opt.id);
-    if (sv) sv.textContent = cr.peso * (cr.votes[opt.id]??0);
-  });
-  updateScoreboard();
-  scheduleSave();
+  cr.peso=+val;
+  const pct=valToPct(+val);
+  el('pf-'+cid).style.width=pct+'%';
+  el('pt-'+cid).style.left=pct+'%';
+  el('pv-'+cid).textContent=val;
+  dec.options.forEach(opt=>{ const s=el('vs-'+cid+'-'+opt.id); if(s) s.textContent=cr.peso*(cr.votes[opt.id]??0); });
+  updateScoreboard(); scheduleSave();
 }
-
-function onVote(cid, optId, val) {
-  const dec = decisions[currentId];
-  const cr = dec.criteria.find(c=>c.id===cid);
+function onVote(cid,optId,val) {
+  const dec=decisions[currentId];
+  const cr=dec.criteria.find(c=>c.id===cid);
   if (!cr) return;
-  cr.votes[optId] = +val;
-  const pct = valToPct(+val);
-  el('vf-'+cid+'-'+optId).style.width = pct+'%';
-  el('vt-'+cid+'-'+optId).style.left  = pct+'%';
-  el('vv-'+cid+'-'+optId).textContent = val;
-  el('vs-'+cid+'-'+optId).textContent = cr.peso * +val;
-  updateScoreboard();
-  scheduleSave();
+  cr.votes[optId]=+val;
+  const pct=valToPct(+val);
+  el('vf-'+cid+'-'+optId).style.width=pct+'%';
+  el('vt-'+cid+'-'+optId).style.left=pct+'%';
+  el('vv-'+cid+'-'+optId).textContent=val;
+  el('vs-'+cid+'-'+optId).textContent=cr.peso*+val;
+  updateScoreboard(); scheduleSave();
 }
-
 function el(id){ return document.getElementById(id); }
 
-// ── CRITERIA CRUD ─────────────────────────────────────────────────
+// ── CRITERIA CRUD ────────────────────────────────────────────────
 function addCriterion() {
-  const dec = decisions[currentId];
-  if (!dec) return;
-  const votes = {};
-  dec.options.forEach(o => { votes[o.id] = 5; });
-  dec.criteria.push({ id:genCid(), label:'', type:'neutral', peso:5, votes });
+  const dec=decisions[currentId]; if(!dec) return;
+  const votes={};
+  dec.options.forEach(o=>{ votes[o.id]=5; });
+  dec.criteria.push({id:genCid(),label:'',type:'neutral',peso:5,votes});
   renderRows(); updateScoreboard(); scheduleSave();
 }
-
 function removeCriterion(cid) {
-  const dec = decisions[currentId];
-  dec.criteria = dec.criteria.filter(c=>c.id!==cid);
+  const dec=decisions[currentId];
+  dec.criteria=dec.criteria.filter(c=>c.id!==cid);
   renderRows(); updateScoreboard(); scheduleSave();
 }
-
-function updateCriterionField(cid, field, val) {
-  const dec = decisions[currentId];
-  const cr = dec.criteria.find(c=>c.id===cid);
-  if (cr) { cr[field]=val; scheduleSave(); }
-  if (field==='label') updateScoreboard();
+function updateCriterionField(cid,field,val) {
+  const dec=decisions[currentId];
+  const cr=dec.criteria.find(c=>c.id===cid);
+  if(cr){ cr[field]=val; scheduleSave(); }
+  if(field==='label') updateScoreboard();
 }
 
-// ── OPTIONS CRUD ──────────────────────────────────────────────────
+// ── OPTIONS CRUD ─────────────────────────────────────────────────
 function addOption() {
-  const dec = decisions[currentId];
-  if (dec.options.length >= 5) { showToast('Massimo 5 opzioni'); return; }
-  const oid = genOid();
-  const ci  = dec.options.length % OPT_COLORS.length;
-  dec.options.push({ id:oid, name:'Opzione '+(dec.options.length+1), colorIdx:ci });
-  dec.criteria.forEach(cr => { cr.votes[oid] = 5; });
+  const dec=decisions[currentId];
+  if(dec.options.length>=5){ showToast('Massimo 5 opzioni'); return; }
+  const oid=genOid(), ci=dec.options.length%OPT_COLORS.length;
+  dec.options.push({id:oid,name:'Opzione '+(dec.options.length+1),colorIdx:ci});
+  dec.criteria.forEach(cr=>{ cr.votes[oid]=5; });
   renderMain(); scheduleSave();
 }
-
 function removeOption(idx) {
-  const dec = decisions[currentId];
-  if (dec.options.length <= 1) { showToast('Minimo 1 opzione'); return; }
-  const oid = dec.options[idx].id;
+  const dec=decisions[currentId];
+  if(dec.options.length<=1){ showToast('Minimo 1 opzione'); return; }
+  const oid=dec.options[idx].id;
   dec.options.splice(idx,1);
-  dec.criteria.forEach(cr => { delete cr.votes[oid]; });
+  dec.criteria.forEach(cr=>{ delete cr.votes[oid]; });
   renderMain(); scheduleSave();
 }
 
-// ── SCOREBOARD ────────────────────────────────────────────────────
+// ── SCOREBOARD ───────────────────────────────────────────────────
 function updateScoreboard() {
-  const dec = decisions[currentId];
-  const sb  = document.getElementById('scoreboard');
-  if (!dec || !sb) return;
+  const dec=decisions[currentId];
+  const sb=document.getElementById('scoreboard');
+  if(!dec||!sb) return;
 
-  const totals = {};
-  dec.options.forEach(o => { totals[o.id] = 0; });
+  const totals={};
+  dec.options.forEach(o=>{ totals[o.id]=0; });
 
-  const rowData = dec.criteria.map(cr => {
-    const scores = {};
-    dec.options.forEach(o => {
-      const v = cr.votes[o.id] ?? 0;
-      // PRO: peso*voto positive; CONTRO: inverted (peso*(10-voto)); NEUTRAL: peso*voto
-      let s;
-      if (cr.type === 'contro') s = cr.peso * (10 - v);
-      else                      s = cr.peso * v;
-      scores[o.id] = s;
-      totals[o.id] += s;
+  const rowData=dec.criteria.map(cr=>{
+    const scores={};
+    dec.options.forEach(o=>{
+      const v=cr.votes[o.id]??0;
+      const s=cr.type==='contro' ? cr.peso*(10-v) : cr.peso*v;
+      scores[o.id]=s; totals[o.id]+=s;
     });
-    return { label: cr.label||'(senza nome)', scores };
+    return {label:cr.label||'(senza nome)',scores};
   });
 
-  const maxRow = Math.max(...rowData.flatMap(r=>Object.values(r.scores)), 1);
-  const maxTot = Math.max(...Object.values(totals), 1);
+  const maxRow=Math.max(...rowData.flatMap(r=>Object.values(r.scores)),1);
+  const maxTot=Math.max(...Object.values(totals),1);
 
-  let html = '';
-
-  // per-row
-  if (rowData.length) {
-    html += '<div style="display:flex;flex-direction:column;gap:5px">';
-    rowData.forEach(rd => {
-      html += `<div class="sb-row"><span class="sb-label" title="${rd.label}">${escHtml(rd.label)}</span>
+  let html='';
+  if(rowData.length) {
+    html+='<div style="display:flex;flex-direction:column;gap:5px">';
+    rowData.forEach(rd=>{
+      html+=`<div class="sb-row"><span class="sb-label" title="${escHtml(rd.label)}">${escHtml(rd.label)}</span>
         <div style="flex:1;display:flex;flex-direction:column;gap:3px">`;
-      dec.options.forEach((opt,oi) => {
-        const c = OPT_COLORS[opt.colorIdx%OPT_COLORS.length];
-        const s = rd.scores[opt.id]??0;
-        html += `<div class="sb-track"><div class="sb-fill" style="width:${s/maxRow*100}%;background:${c.fill}"></div></div>`;
+      dec.options.forEach(opt=>{
+        const c=OPT_COLORS[opt.colorIdx%OPT_COLORS.length];
+        const s=rd.scores[opt.id]??0;
+        html+=`<div class="sb-track"><div class="sb-fill" style="width:${s/maxRow*100}%;background:${c.fill}"></div></div>`;
       });
-      html += `</div>`;
-      dec.options.forEach((opt,oi)=>{
+      html+=`</div>`;
+      dec.options.forEach(opt=>{
         const c=OPT_COLORS[opt.colorIdx%OPT_COLORS.length];
         html+=`<span class="sb-num" style="color:${c.text}">${rd.scores[opt.id]??0}</span>`;
       });
-      html += '</div>';
+      html+='</div>';
     });
-    html += '</div>';
+    html+='</div>';
   }
 
-  // totals
-  html += `<div class="sb-divider">Totale</div>`;
-  dec.options.forEach(opt => {
-    const c = OPT_COLORS[opt.colorIdx%OPT_COLORS.length];
-    const t = totals[opt.id];
-    html += `<div class="sb-row">
+  html+=`<div class="sb-divider">Totale</div>`;
+  dec.options.forEach(opt=>{
+    const c=OPT_COLORS[opt.colorIdx%OPT_COLORS.length];
+    const t=totals[opt.id];
+    html+=`<div class="sb-row">
       <span class="sb-label" style="color:${c.text};font-weight:700">${escHtml(opt.name)}</span>
       <div class="sb-track"><div class="sb-fill" style="width:${t/maxTot*100}%;background:${c.fill}"></div></div>
       <span class="sb-num" style="color:${c.text}">${t}</span>
     </div>`;
   });
 
-  // winner
-  const sorted = dec.options.slice().sort((a,b)=>(totals[b.id]??0)-(totals[a.id]??0));
+  const sorted=dec.options.slice().sort((a,b)=>(totals[b.id]??0)-(totals[a.id]??0));
   let wHtml='';
-  if (!dec.criteria.length) {
+  if(!dec.criteria.length) {
     wHtml=`<div class="winner-row" style="background:#F8F8FA;border:1.5px solid var(--bord)">
-      <span style="font-size:1.1rem">🤔</span>
-      <div><div class="winner-name">Aggiungi categorie</div></div></div>`;
-  } else if (sorted.length>=2 && totals[sorted[0].id]===totals[sorted[1].id]) {
+      <span style="font-size:1.1rem">🤔</span><div><div class="winner-name">Aggiungi categorie</div></div></div>`;
+  } else if(sorted.length>=2&&totals[sorted[0].id]===totals[sorted[1].id]) {
     wHtml=`<div class="winner-row" style="background:#F8F8FA;border:1.5px solid var(--bord)">
-      <span style="font-size:1.1rem">🤝</span>
-      <div><div class="winner-name">Parità!</div>
+      <span style="font-size:1.1rem">🤝</span><div><div class="winner-name">Parità!</div>
       <div class="winner-detail">${totals[sorted[0].id]} punti</div></div></div>`;
-  } else if (sorted.length>=1) {
-    const w=sorted[0];
-    const c=OPT_COLORS[w.colorIdx%OPT_COLORS.length];
-    const diff = sorted.length>=2 ? totals[w.id]-totals[sorted[1].id] : totals[w.id];
+  } else if(sorted.length>=1) {
+    const w=sorted[0], c=OPT_COLORS[w.colorIdx%OPT_COLORS.length];
+    const diff=sorted.length>=2?totals[w.id]-totals[sorted[1].id]:totals[w.id];
     wHtml=`<div class="winner-row" style="background:${c.bg};border:1.5px solid ${c.dot}33">
       <span style="font-size:1.1rem">🏆</span>
       <div><div class="winner-name" style="color:${c.text}">${escHtml(w.name)} è la scelta migliore</div>
       <div class="winner-detail">+${diff} punti (${totals[w.id]} totale)</div></div></div>`;
   }
-  html += wHtml;
+  html+=wHtml;
+  html+=`<p style="font-size:0.62rem;color:var(--muted);margin-top:8px">
+    ℹ️ ❌ CONTRO: score = peso × (10 − voto) — voto alto = molto problematico = penalizza.</p>`;
 
-  // note about CONTRO
-  html += `<p style="font-size:0.65rem;color:var(--muted);margin-top:10px">
-    ℹ️ Le righe ❌ CONTRO usano score = peso × (10 − voto): voto alto = molto problematico = penalizza.</p>`;
-
-  sb.innerHTML = `<div class="sb-title">📊 Risultato pesato</div>${html}`;
+  sb.innerHTML=`<div class="sb-title">📊 Risultato pesato</div>${html}`;
 }
 
-// ── UTILS ─────────────────────────────────────────────────────────
-function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2000);
-}
+// ── UTILS ────────────────────────────────────────────────────────
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
 </script>
 </body>
 </html>
