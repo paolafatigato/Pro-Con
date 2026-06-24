@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decisione di Lorenzo</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --lavender: #6B7FD4;
+  --lavender-light: #EEF0FC;
+  --lavender-mid: #B8C2EE;
+  --amber: #D97706;
+  --amber-light: #FEF3EC;
+  --amber-mid: #F3C49A;
+  --pro: #3DBF82;
+  --pro-light: #E8F9F2;
+  --contro: #E85A7A;
+  --contro-light: #FDEEF2;
+  --bg: #F0F0FA;
+  --card: #FFFFFF;
+  --text: #1A1A2E;
+  --text-muted: #7070A0;
+  --border: #E0E0F0;
+  --shadow: 0 1px 8px rgba(80,80,160,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 80px; }
+
+/* ── HEADER ── */
+header {
+  background: linear-gradient(135deg, #1A1A2E 0%, #2E2E5A 100%);
+  color: white; padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+}
+header h1 { font-family: 'Sora', sans-serif; font-size: 1.3rem; font-weight: 800; }
+header h1 span { color: var(--lavender-mid); }
+header p { font-size: 0.74rem; color: rgba(255,255,255,0.45); margin-top: 1px; }
+.header-actions { display: flex; gap: 8px; }
+.btn { font-family: 'Sora', sans-serif; font-size: 0.75rem; font-weight: 600; padding: 6px 13px; border-radius: 7px; border: none; cursor: pointer; transition: all 0.15s; }
+.btn-ghost { background: rgba(255,255,255,0.09); color: white; border: 1px solid rgba(255,255,255,0.2); }
+.btn-ghost:hover { background: rgba(255,255,255,0.16); }
+.btn-primary { background: var(--lavender); color: white; }
+.btn-primary:hover { background: #5a6ec0; }
+.btn-danger { background: rgba(232,90,122,0.15); color: var(--contro); border: 1px solid rgba(232,90,122,0.3); }
+.btn-danger:hover { background: var(--contro); color: white; }
+
+/* ── MAIN TABLE ── */
+.table-wrap { max-width: 1000px; margin: 20px auto 0; padding: 0 16px; }
+
+/* Column headers */
+.col-headers {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0;
+  margin-bottom: 0;
+  background: white;
+  border-radius: 12px 12px 0 0;
+  border: 1.5px solid var(--border);
+  border-bottom: none;
+  overflow: hidden;
+}
+.col-head {
+  padding: 10px 14px;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px;
+}
+.col-head-cat   { color: var(--text-muted); background: #F8F8FF; border-right: 1px solid var(--border); }
+.col-head-peso  { color: #8B5CF6; background: #F5F0FF; border-right: 1px solid var(--border); justify-content: center; }
+.col-head-a     { color: var(--amber); background: #FFFAF5; border-right: 1px solid var(--border); }
+.col-head-b     { color: var(--lavender); background: #F5F7FF; }
+.col-head-a input, .col-head-b input {
+  font-family: 'Sora', sans-serif; font-size: 0.78rem; font-weight: 700;
+  background: transparent; border: none; outline: none; width: 100%;
+  color: inherit;
+}
+.col-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.dot-a { background: var(--amber); }
+.dot-b { background: var(--lavender); }
+
+/* Rows container */
+.rows-body {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+/* Each row */
+.criterion-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.15s;
+  cursor: grab;
+  min-height: 72px;
+}
+.criterion-row:first-child { border-top: none; }
+.criterion-row:hover { background: #FAFAFE; }
+.criterion-row.dragging { opacity: 0.4; }
+.criterion-row.drag-over { outline: 2px solid var(--lavender); outline-offset: -2px; }
+
+/* CELL BASE */
+.cell-cat, .cell-peso, .cell-score {
+  padding: 10px 12px;
+  height: 100%;
+  display: flex; align-items: center;
+}
+.cell-cat   { border-right: 1px solid var(--border); flex-direction: column; align-items: flex-start; gap: 4px; }
+.cell-peso  { border-right: 1px solid var(--border); flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.cell-score { border-right: 1px solid var(--border); flex-direction: column; align-items: stretch; gap: 4px; }
+.cell-score:last-child { border-right: none; }
+
+/* category name */
+.cat-input {
+  font-size: 0.85rem; font-weight: 600; color: var(--text);
+  background: transparent; border: none; outline: none;
+  font-family: 'Inter', sans-serif; width: 100%;
+}
+.cat-input::placeholder { color: var(--text-muted); font-weight: 400; }
+.cat-type-badge {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 3px;
+}
+.badge-pro    { background: var(--pro-light); color: var(--pro); }
+.badge-contro { background: var(--contro-light); color: var(--contro); }
+.badge-neutral{ background: #F0F0FA; color: var(--text-muted); }
+.cat-row-actions { display: flex; gap: 3px; margin-left: auto; }
+.cat-top { display: flex; align-items: center; width: 100%; gap: 6px; }
+.type-select {
+  font-size: 0.62rem; font-weight: 700; padding: 2px 4px; border-radius: 4px;
+  border: 1px solid var(--border); background: white; cursor: pointer;
+  color: var(--text-muted); font-family: 'Inter', sans-serif;
+}
+
+/* SCORE CHIP */
+.score-display {
+  display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+  height: 16px;
+}
+.score-val {
+  font-family: 'Sora', sans-serif; font-size: 0.72rem; font-weight: 700;
+}
+.score-val-a { color: var(--amber); }
+.score-val-b { color: var(--lavender); }
+.score-val-peso { color: #8B5CF6; }
+.score-label { font-size: 0.6rem; color: var(--text-muted); }
+
+/* ── TRACK SLIDER ── */
+.track-wrap { position: relative; width: 100%; height: 28px; display: flex; align-items: center; }
+
+.track-bg {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  height: 4px; background: #E8E8F4; border-radius: 2px;
+}
+/* filled portion */
+.track-fill {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  height: 4px; border-radius: 2px; pointer-events: none;
+}
+.fill-peso { background: #8B5CF6; }
+.fill-a    { background: var(--amber); }
+.fill-b    { background: var(--lavender); }
+
+/* tick marks */
+.track-ticks {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  display: flex; justify-content: space-between; pointer-events: none;
+  padding: 0 1px;
+}
+.tick {
+  width: 1px; height: 8px; background: #C8C8E0;
+  transform: translateY(-50%); margin-top: -1px;
+  border-radius: 1px;
+}
+.tick.major { height: 12px; background: #A8A8C8; }
+
+/* range input - invisible but functional */
+.track-input {
+  position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+  width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; margin: 0;
+  -webkit-appearance: none; appearance: none;
+  z-index: 2;
+}
+
+/* custom thumb dot */
+.thumb-dot {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 14px; height: 14px; border-radius: 50%;
+  pointer-events: none; z-index: 3;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  transition: transform 0.1s;
+}
+.thumb-dot.active { transform: translate(-50%, -50%) scale(1.15); }
+.thumb-peso { background: #8B5CF6; box-shadow: 0 0 0 3px rgba(139,92,246,0.2); }
+.thumb-a    { background: var(--amber); box-shadow: 0 0 0 3px rgba(217,119,6,0.2); }
+.thumb-b    { background: var(--lavender); box-shadow: 0 0 0 3px rgba(107,127,212,0.2); }
+
+/* tick label under track */
+.track-labels {
+  display: flex; justify-content: space-between;
+  padding: 0 1px; margin-top: 1px;
+  pointer-events: none;
+}
+.track-labels span {
+  font-size: 0.55rem; color: #B0B0CC; font-family: 'Sora', sans-serif; font-weight: 600;
+  width: 12px; text-align: center; transform: translateX(-6px);
+}
+.track-labels span:first-child { transform: none; }
+.track-labels span:last-child  { transform: translateX(-12px); }
+
+/* peso cell special */
+.peso-track-wrap { width: 100%; }
+
+/* icon btn */
+.icon-btn {
+  background: none; border: none; cursor: pointer;
+  padding: 2px 4px; border-radius: 4px;
+  color: var(--text-muted); font-size: 0.75rem;
+  transition: all 0.12s; line-height: 1;
+}
+.icon-btn:hover { background: var(--border); color: var(--text); }
+.icon-btn.del:hover { background: var(--contro-light); color: var(--contro); }
+
+/* ADD ROW */
+.add-row-wrap {
+  max-width: 1000px; margin: 8px auto 0; padding: 0 16px;
+}
+.add-row-btn {
+  width: 100%; background: white; border: 1.5px dashed var(--border);
+  border-radius: 10px; padding: 9px;
+  font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 500;
+  cursor: pointer; color: var(--text-muted);
+  transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.add-row-btn:hover { border-color: var(--lavender); color: var(--lavender); background: var(--lavender-light); }
+
+/* ── SCOREBOARD ── */
+.scoreboard {
+  max-width: 1000px; margin: 20px auto 0; padding: 0 16px;
+}
+.score-card {
+  background: white; border-radius: 12px; padding: 20px;
+  border: 1.5px solid var(--border); box-shadow: var(--shadow);
+}
+.score-card-title {
+  font-family: 'Sora', sans-serif; font-size: 0.88rem; font-weight: 700;
+  margin-bottom: 16px; color: var(--text);
+}
+.score-bars { display: flex; flex-direction: column; gap: 10px; }
+.score-bar-row { display: flex; align-items: center; gap: 10px; }
+.score-bar-label { font-size: 0.75rem; font-weight: 600; width: 130px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.score-bar-track { flex: 1; height: 10px; background: #EEEEF8; border-radius: 5px; overflow: hidden; }
+.score-bar-fill  { height: 100%; border-radius: 5px; transition: width 0.45s cubic-bezier(.34,1.56,.64,1); }
+.fill-track-a { background: var(--amber); }
+.fill-track-b { background: var(--lavender); }
+.score-bar-num { font-family: 'Sora', sans-serif; font-size: 0.76rem; font-weight: 700; min-width: 32px; text-align: right; }
+
+.divider-label {
+  font-family: 'Sora', sans-serif; font-size: 0.64rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);
+  margin: 12px 0 8px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* winner */
+.winner-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 14px; padding: 12px 16px; border-radius: 9px;
+  transition: all 0.4s;
+}
+.winner-row.amber { background: var(--amber-light); border: 1.5px solid var(--amber-mid); }
+.winner-row.lav   { background: var(--lavender-light); border: 1.5px solid var(--lavender-mid); }
+.winner-row.tie   { background: #F8F8FA; border: 1.5px solid var(--border); }
+.winner-name { font-family: 'Sora', sans-serif; font-size: 0.92rem; font-weight: 800; }
+.winner-detail { font-size: 0.73rem; color: var(--text-muted); margin-top: 2px; }
+
+/* net bar */
+.net-bar-container { position: relative; height: 28px; background: #EEEEF8; border-radius: 14px; overflow: hidden; margin-top: 10px; }
+.net-bar-a { position: absolute; left: 50%; top: 0; bottom: 0; background: var(--amber); border-radius: 0 14px 14px 0; transition: width 0.5s cubic-bezier(.34,1.56,.64,1); }
+.net-bar-b { position: absolute; right: 50%; top: 0; bottom: 0; background: var(--lavender); border-radius: 14px 0 0 14px; transition: width 0.5s cubic-bezier(.34,1.56,.64,1); }
+.net-bar-center { position: absolute; left: 50%; transform: translateX(-50%); top: 0; bottom: 0; width: 2px; background: white; z-index: 2; }
+.net-bar-labels { display: flex; justify-content: space-between; margin-top: 4px; }
+.net-bar-labels span { font-family: 'Sora', sans-serif; font-size: 0.72rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚖️ Decisione di <span>Lorenzo</span></h1>
+    <p>Una riga per categoria · un peso · voti separati per ogni opzione</p>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost" onclick="resetAll()">🔄 Reset</button>
+    <button class="btn btn-primary" onclick="loadPreset()">📋 Esempio</button>
+  </div>
+</header>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <div class="col-headers">
+    <div class="col-head col-head-cat">📋 Categoria</div>
+    <div class="col-head col-head-peso">⚖️ Peso</div>
+    <div class="col-head col-head-a">
+      <span class="col-dot dot-a"></span>
+      <input type="text" id="nameA" value="🍫 Cioccolato" oninput="updateGraph()">
+    </div>
+    <div class="col-head col-head-b">
+      <span class="col-dot dot-b"></span>
+      <input type="text" id="nameB" value="🎓 Università" oninput="updateGraph()">
+    </div>
+  </div>
+  <div class="rows-body" id="rowsBody"></div>
+</div>
+
+<div class="add-row-wrap">
+  <button class="add-row-btn" onclick="addRow()">＋ Aggiungi categoria</button>
+</div>
+
+<!-- SCOREBOARD -->
+<div class="scoreboard">
+  <div class="score-card">
+    <div class="score-card-title">📊 Risultato pesato <span style="font-weight:400;font-size:0.72rem;color:var(--text-muted)">(score = Σ peso × voto)</span></div>
+    <div id="scoreboard"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// DATA MODEL
+// criterion: { id, label, type:'pro'|'contro'|'neutral', peso, votoA, votoB }
+// ══════════════════════════════════════════════════════════════════
+let criteria = [];
+let cid = 1;
+function genId() { return 'c' + (cid++); }
+
+// ── ADD / REMOVE ──────────────────────────────────────────────────
+function addRow(label='', type='neutral', peso=5, votoA=5, votoB=5) {
+  criteria.push({ id: genId(), label, type, peso, votoA, votoB });
+  render(); updateGraph();
+}
+
+function removeRow(id) {
+  criteria = criteria.filter(c => c.id !== id);
+  render(); updateGraph();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────
+let dragSrcId = null;
+
+function render() {
+  const body = document.getElementById('rowsBody');
+  body.innerHTML = '';
+  criteria.forEach(cr => body.appendChild(makeRow(cr)));
+}
+
+// map 1-10 value to % position on track (accounting for thumb radius ~7px)
+function valToPct(val) { return ((val - 1) / 9) * 100; }
+
+function makeRow(cr) {
+  const div = document.createElement('div');
+  div.className = 'criterion-row';
+  div.id = 'row-' + cr.id;
+  div.draggable = true;
+
+  div.addEventListener('dragstart', e => {
+    dragSrcId = cr.id;
+    setTimeout(() => div.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  div.addEventListener('dragend', () => {
+    div.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    dragSrcId = null;
+  });
+  div.addEventListener('dragover', e => { e.preventDefault(); if (dragSrcId && dragSrcId !== cr.id) div.classList.add('drag-over'); });
+  div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+  div.addEventListener('drop', e => {
+    e.preventDefault(); div.classList.remove('drag-over');
+    if (!dragSrcId || dragSrcId === cr.id) return;
+    const si = criteria.findIndex(c => c.id === dragSrcId);
+    const ti = criteria.findIndex(c => c.id === cr.id);
+    if (si < 0 || ti < 0) return;
+    const [m] = criteria.splice(si, 1);
+    criteria.splice(ti, 0, m);
+    render(); updateGraph();
+  });
+
+  const badgeMap = { pro: 'badge-pro', contro: 'badge-contro', neutral: 'badge-neutral' };
+  const badgeLbl = { pro: 'PRO', contro: 'CONTRO', neutral: 'NEUTRO' };
+
+  div.innerHTML = `
+    <!-- CATEGORY CELL -->
+    <div class="cell-cat">
+      <div class="cat-top">
+        <input class="cat-input" placeholder="Nome categoria…" value="${escHtml(cr.label)}"
+          oninput="criteria.find(c=>c.id==='${cr.id}').label=this.value; updateGraph()">
+        <select class="type-select" onchange="criteria.find(c=>c.id==='${cr.id}').type=this.value; render(); updateGraph()">
+          <option value="pro"     ${cr.type==='pro'    ?'selected':''}>✅</option>
+          <option value="contro"  ${cr.type==='contro' ?'selected':''}>❌</option>
+          <option value="neutral" ${cr.type==='neutral'?'selected':''}>➖</option>
+        </select>
+        <button class="icon-btn del" onclick="removeRow('${cr.id}')">🗑</button>
+      </div>
+      <span class="cat-type-badge ${badgeMap[cr.type]}">${badgeLbl[cr.type]}</span>
+    </div>
+
+    <!-- PESO CELL -->
+    <div class="cell-peso">
+      <div class="track-wrap peso-track-wrap" id="pw-${cr.id}">
+        <div class="track-bg"></div>
+        ${makeTicks()}
+        <div class="track-fill fill-peso" id="pf-${cr.id}" style="width:${valToPct(cr.peso)}%"></div>
+        <div class="thumb-dot thumb-peso" id="pt-${cr.id}" style="left:${valToPct(cr.peso)}%"></div>
+        <input type="range" class="track-input" min="1" max="10" value="${cr.peso}"
+          oninput="onPeso('${cr.id}',this.value)"
+          onmousedown="this.previousElementSibling.classList.add('active')"
+          onmouseup="this.previousElementSibling.classList.remove('active')">
+      </div>
+      <div class="score-display">
+        <span class="score-label">peso</span>
+        <span class="score-val score-val-peso" id="pv-${cr.id}">${cr.peso}</span>
+      </div>
+    </div>
+
+    <!-- VOTO A CELL -->
+    <div class="cell-score">
+      <div class="track-wrap" id="aw-${cr.id}">
+        <div class="track-bg"></div>
+        ${makeTicks()}
+        <div class="track-fill fill-a" id="af-${cr.id}" style="width:${valToPct(cr.votoA)}%"></div>
+        <div class="thumb-dot thumb-a" id="at-${cr.id}" style="left:${valToPct(cr.votoA)}%"></div>
+        <input type="range" class="track-input" min="1" max="10" value="${cr.votoA}"
+          oninput="onVotoA('${cr.id}',this.value)"
+          onmousedown="this.previousElementSibling.classList.add('active')"
+          onmouseup="this.previousElementSibling.classList.remove('active')">
+      </div>
+      <div class="score-display">
+        <span class="score-label">voto</span>
+        <span class="score-val score-val-a" id="av-${cr.id}">${cr.votoA}</span>
+        <span class="score-label" style="margin-left:4px">score</span>
+        <span class="score-val score-val-a" id="as-${cr.id}">${cr.peso * cr.votoA}</span>
+      </div>
+    </div>
+
+    <!-- VOTO B CELL -->
+    <div class="cell-score" style="border-right:none">
+      <div class="track-wrap" id="bw-${cr.id}">
+        <div class="track-bg"></div>
+        ${makeTicks()}
+        <div class="track-fill fill-b" id="bf-${cr.id}" style="width:${valToPct(cr.votoB)}%"></div>
+        <div class="thumb-dot thumb-b" id="bt-${cr.id}" style="left:${valToPct(cr.votoB)}%"></div>
+        <input type="range" class="track-input" min="1" max="10" value="${cr.votoB}"
+          oninput="onVotoB('${cr.id}',this.value)"
+          onmousedown="this.previousElementSibling.classList.add('active')"
+          onmouseup="this.previousElementSibling.classList.remove('active')">
+      </div>
+      <div class="score-display">
+        <span class="score-label">voto</span>
+        <span class="score-val score-val-b" id="bv-${cr.id}">${cr.votoB}</span>
+        <span class="score-label" style="margin-left:4px">score</span>
+        <span class="score-val score-val-b" id="bs-${cr.id}">${cr.peso * cr.votoB}</span>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+// generate tick marks for 1-10 (9 intervals = 10 positions)
+function makeTicks() {
+  let html = '<div class="track-ticks">';
+  for (let i = 1; i <= 10; i++) {
+    const major = (i % 5 === 0 || i === 1 || i === 10);
+    html += `<div class="tick${major?' major':''}"></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+// ── SLIDER HANDLERS ───────────────────────────────────────────────
+function onPeso(id, val) {
+  const cr = criteria.find(c => c.id === id);
+  if (!cr) return;
+  cr.peso = +val;
+  const pct = valToPct(+val);
+  document.getElementById('pf-' + id).style.width = pct + '%';
+  document.getElementById('pt-' + id).style.left  = pct + '%';
+  document.getElementById('pv-' + id).textContent = val;
+  document.getElementById('as-' + id).textContent = cr.peso * cr.votoA;
+  document.getElementById('bs-' + id).textContent = cr.peso * cr.votoB;
+  updateGraph();
+}
+
+function onVotoA(id, val) {
+  const cr = criteria.find(c => c.id === id);
+  if (!cr) return;
+  cr.votoA = +val;
+  const pct = valToPct(+val);
+  document.getElementById('af-' + id).style.width = pct + '%';
+  document.getElementById('at-' + id).style.left  = pct + '%';
+  document.getElementById('av-' + id).textContent = val;
+  document.getElementById('as-' + id).textContent = cr.peso * cr.votoA;
+  updateGraph();
+}
+
+function onVotoB(id, val) {
+  const cr = criteria.find(c => c.id === id);
+  if (!cr) return;
+  cr.votoB = +val;
+  const pct = valToPct(+val);
+  document.getElementById('bf-' + id).style.width = pct + '%';
+  document.getElementById('bt-' + id).style.left  = pct + '%';
+  document.getElementById('bv-' + id).textContent = val;
+  document.getElementById('bs-' + id).textContent = cr.peso * cr.votoB;
+  updateGraph();
+}
+
+// ── GRAPH / SCOREBOARD ────────────────────────────────────────────
+function updateGraph() {
+  const nameA = document.getElementById('nameA').value || 'Opzione A';
+  const nameB = document.getElementById('nameB').value || 'Opzione B';
+
+  let totalA = 0, totalB = 0;
+  const rowScores = criteria.map(cr => ({
+    label: cr.label || '(senza nome)',
+    type:  cr.type,
+    scoreA: cr.peso * cr.votoA,
+    scoreB: cr.peso * cr.votoB,
+    diff:   cr.peso * cr.votoA - cr.peso * cr.votoB,
+  }));
+  rowScores.forEach(rs => { totalA += rs.scoreA; totalB += rs.scoreB; });
+
+  const mx = Math.max(totalA, totalB, 1);
+  const rowMx = Math.max(...rowScores.map(rs => Math.max(rs.scoreA, rs.scoreB)), 1);
+
+  let html = '';
+
+  // per-row breakdown
+  if (rowScores.length) {
+    html += `<div class="score-bars">`;
+    rowScores.forEach(rs => {
+      const pA = rs.scoreA / rowMx * 100;
+      const pB = rs.scoreB / rowMx * 100;
+      html += `
+        <div class="score-bar-row">
+          <span class="score-bar-label" title="${rs.label}">${rs.label}</span>
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+            <div class="score-bar-track">
+              <div class="score-bar-fill fill-track-a" style="width:${pA}%"></div>
+            </div>
+            <div class="score-bar-track">
+              <div class="score-bar-fill fill-track-b" style="width:${pB}%"></div>
+            </div>
+          </div>
+          <span class="score-bar-num" style="color:var(--amber)">${rs.scoreA}</span>
+          <span style="color:var(--text-muted);font-size:0.7rem;padding:0 3px">/</span>
+          <span class="score-bar-num" style="color:var(--lavender)">${rs.scoreB}</span>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // totals
+  html += `<div class="divider-label">Totale</div>`;
+  html += `
+    <div class="score-bars">
+      <div class="score-bar-row">
+        <span class="score-bar-label" style="color:var(--amber);font-weight:700">${nameA}</span>
+        <div class="score-bar-track" style="flex:1"><div class="score-bar-fill fill-track-a" style="width:${totalA/mx*100}%"></div></div>
+        <span class="score-bar-num" style="color:var(--amber)">${totalA}</span>
+      </div>
+      <div class="score-bar-row">
+        <span class="score-bar-label" style="color:var(--lavender);font-weight:700">${nameB}</span>
+        <div class="score-bar-track" style="flex:1"><div class="score-bar-fill fill-track-b" style="width:${totalB/mx*100}%"></div></div>
+        <span class="score-bar-num" style="color:var(--lavender)">${totalB}</span>
+      </div>
+    </div>`;
+
+  // net bar
+  const mxNet = Math.max(Math.abs(totalA), Math.abs(totalB), 1);
+  const pctA  = Math.max(0, totalA / mxNet * 50);
+  const pctB  = Math.max(0, totalB / mxNet * 50);
+  html += `
+    <div class="net-bar-container" style="margin-top:12px">
+      <div class="net-bar-b" style="width:${pctB}%"></div>
+      <div class="net-bar-a" style="width:${pctA}%"></div>
+      <div class="net-bar-center"></div>
+    </div>
+    <div class="net-bar-labels">
+      <span style="color:var(--lavender)">${nameB} ${totalB}</span>
+      <span style="color:var(--amber)">${nameA} ${totalA}</span>
+    </div>`;
+
+  // winner
+  let wCls, wIcon, wText, wDetail;
+  if (!criteria.length) {
+    wCls='tie'; wIcon='🤔'; wText='Aggiungi categorie per vedere la scelta'; wDetail='';
+  } else if (totalA === totalB) {
+    wCls='tie'; wIcon='🤝'; wText='Parità perfetta'; wDetail=`Entrambe ${totalA} punti`;
+  } else if (totalA > totalB) {
+    wCls='amber'; wIcon='🏆'; wText=`${nameA} è la scelta migliore`; wDetail=`+${totalA-totalB} punti (${totalA} vs ${totalB})`;
+  } else {
+    wCls='lav'; wIcon='🏆'; wText=`${nameB} è la scelta migliore`; wDetail=`+${totalB-totalA} punti (${totalB} vs ${totalA})`;
+  }
+  html += `
+    <div class="winner-row ${wCls}">
+      <span style="font-size:1.3rem">${wIcon}</span>
+      <div>
+        <div class="winner-name">${wText}</div>
+        <div class="winner-detail">${wDetail}</div>
+      </div>
+    </div>`;
+
+  document.getElementById('scoreboard').innerHTML = html;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── PRESET ────────────────────────────────────────────────────────
+function loadPreset() {
+  criteria = []; cid = 1;
+  document.getElementById('nameA').value = '🍫 Cioccolato';
+  document.getElementById('nameB').value = '🎓 Università';
+
+  const data = [
+    // label,              type,      peso, votoA, votoB
+    ['Vacanze',            'pro',      7,    4,     10],
+    ['Distanza da casa',   'pro',      8,    9,      3],
+    ['DoE / Ricerca',      'pro',      9,    2,     10],
+    ['Specializzazione',   'pro',      8,    4,      9],
+    ['Flessibilità orari', 'pro',      7,    5,      8],
+    ['Lavoro fisico',      'contro',   6,    5,      1],
+    ['Noia quotidiana',    'contro',   6,    5,      3],
+    ['Costo abbonamento',  'contro',   5,    1,      6],
+    ['Commute',            'contro',   5,    1,      6],
+    ['Durata impegno',     'neutral',  7,    8,      4],
+    ['Cibo / Ambiente',    'pro',      5,    9,      4],
+    ['Titolo accademico',  'pro',      8,    1,      9],
+  ];
+
+  data.forEach(([label, type, peso, votoA, votoB]) => {
+    criteria.push({ id: genId(), label, type, peso, votoA, votoB });
+  });
+  render(); updateGraph();
+}
+
+function resetAll() {
+  criteria = []; cid = 1;
+  render(); updateGraph();
+}
+
+loadPreset();
+</script>
+</body>
+</html>
