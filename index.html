@@ -391,8 +391,12 @@ async function loadDecisions() {
     setSaveStatus('');
     renderSidebar();
     const ids = Object.keys(decisions);
-    if (!ids.length) createDefaultDecision();
-    else selectDecision(ids[0]);
+    if (ids.length) selectDecision(ids[0]);
+    else {
+      currentId = null;
+      document.getElementById('mainContent').innerHTML = 
+        `<div class="empty-state"><span>⚖️</span><p>Crea una nuova decisione.</p></div>`;
+    }
   } catch(err) {
     setSaveStatus('Errore caricamento');
     console.error(err);
