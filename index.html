@@ -391,12 +391,60 @@ async function loadDecisions() {
     setSaveStatus('');
     renderSidebar();
     const ids = Object.keys(decisions);
-    if (!ids.length) newDecision();
+    if (!ids.length) createDefaultDecision();
     else selectDecision(ids[0]);
   } catch(err) {
     setSaveStatus('Errore caricamento');
     console.error(err);
   }
+}
+
+function createDefaultDecision() {
+  const id = genDid();
+  const o1 = genOid();
+  const o2 = genOid();
+  
+  const defaultCriteria = [
+    {id:"c3",label:"DoE / Ricerca",type:"pro",peso:8,votoA:2,votoB:8},
+    {id:"c11",label:"Argomento di studio",type:"pro",peso:7,votoA:9,votoB:6},
+    {id:"c15",label:"😃entusiasmo iniziale",type:"neutral",peso:4,votoA:10,votoB:5},
+    {id:"c4",label:"Specializzazione",type:"pro",peso:2,votoA:3,votoB:10},
+    {id:"c2",label:"Distanza da casa",type:"neutral",peso:8,votoA:10,votoB:3},
+    {id:"c5",label:"Flessibilità orari",type:"pro",peso:6,votoA:4,votoB:8},
+    {id:"c13",label:"🕓ore di lavoro ",type:"neutral",peso:7,votoA:7,votoB:6},
+    {id:"c1",label:"Vacanze",type:"pro",peso:8,votoA:4,votoB:9},
+    {id:"c14",label:"Autonomia",type:"neutral",peso:3,votoA:4,votoB:8},
+    {id:"c6",label:"Lavoro fisico",type:"contro",peso:4,votoA:4,votoB:10},
+    {id:"c7",label:"Noia quotidiana",type:"contro",peso:6,votoA:5,votoB:7},
+    {id:"c8",label:"Stipendio",type:"pro",peso:6,votoA:6,votoB:5},
+    {id:"c10",label:"Durata impegno",type:"neutral",peso:7,votoA:7,votoB:3}
+  ];
+  
+  const criteria = defaultCriteria.map(cr => ({
+    id: cr.id,
+    label: cr.label,
+    type: cr.type,
+    peso: cr.peso,
+    votes: {
+      [o1]: cr.votoA,
+      [o2]: cr.votoB
+    }
+  }));
+  
+  decisions[id] = {
+    id,
+    title: 'Lavoro Elle 26',
+    options: [
+      {id: o1, name: 'Opzione A', colorIdx: 0},
+      {id: o2, name: 'Opzione B', colorIdx: 1}
+    ],
+    criteria
+  };
+  
+  restoreCounters(decisions[id]);
+  renderSidebar();
+  selectDecision(id);
+  scheduleSave();
 }
 
 function restoreCounters(data) {
